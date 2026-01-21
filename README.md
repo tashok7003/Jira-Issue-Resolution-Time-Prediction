@@ -205,7 +205,7 @@ By applying a log transformation and using LightGBM, the final model achieves th
 
 ```
 ├── GFG_FINAL.csv
-├── Resolution_time_pred_model.pdf
+├── Resolution_time_pred_model.ipynb
 ├── README.md
 ```
 
@@ -223,5 +223,6 @@ By applying a log transformation and using LightGBM, the final model achieves th
 
 ✅ **Completed**
 This repository represents a **finished, portfolio-ready applied machine learning project**.
+
 
 ---
