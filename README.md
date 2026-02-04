@@ -1,228 +1,196 @@
-
-# Jira Issue Resolution Time Prediction
-
----
-
+# 🚀 Jira Issue Resolution Time Prediction
 
 ## 📌 Project Overview
+This project focuses on predicting **issue resolution time** in Jira using historical issue data and machine learning techniques. By leveraging issue metadata, temporal patterns, priority levels, activity indicators, and workload-related features, the model estimates how long a Jira issue will take to be resolved.
 
-This project predicts the **resolution time (in hours)** of Jira issues using historical issue data.
-It demonstrates a **complete applied machine learning workflow**, focusing on **correct problem framing, data leakage prevention, model comparison, and explainability** rather than metric chasing.
-
-The objective is to build a **defensible and production-realistic regression model** that helps teams anticipate long-running issues and improve planning.
+This solution can help engineering and support teams improve **SLA planning, resource allocation, and issue prioritization**.
 
 ---
 
 ## 🎯 Problem Statement
+Given historical Jira issue data, predict the **Resolution Time (in days)** for an issue before it gets resolved.
 
-Given historical Jira issue records, predict how long an issue will take to be resolved.
-
-### Why this matters
-
-* Better **resource & sprint planning**
-* Early identification of **complex / long-running issues**
-* Improved **SLA estimation**
+**Problem Type:** Supervised Machine Learning – Regression
 
 ---
 
-## 🧠 Machine Learning Formulation
+## 📊 Dataset Information
+- **Source:** Public Jira Dataset (Kaggle)
+- **Total Records:** ~49,000 issues
+- **Initial Features:** 491 columns
+- **Final Features:** ~50 columns (after cleaning)
+- **Target Variable:** `Resolution_Time` (in days)
 
-* **Task Type:** Regression
-* **Target Variable:** `resolution_time_hours`
-* **Why not classification or accuracy?**
-  Resolution time is a continuous variable; using classification or “accuracy” would be misleading.
-
----
-
-## 📊 Dataset
-
-* Source: Jira issue export (CSV)
-* Includes:
-
-  * Issue metadata (type, priority, project details)
-  * Textual fields (summary, description, comments)
-  * Lifecycle timestamps (created, resolved)
-
-### Key challenges
-
-* High dimensionality (text + metadata)
-* Sparse features (TF-IDF, one-hot encoding)
-* Strongly skewed target distribution (hours → years)
+The dataset includes:
+- Issue metadata (type, priority, project details)
+- Timestamps (created, updated, resolved)
+- Text data (summary, description)
+- Activity signals (comments, votes)
+- Reporter-related workload information
 
 ---
 
-## 🔧 Data Cleaning & Feature Engineering
+## 🧠 Machine Learning Pipeline
+```text
+1. Load dataset and inspect schema
+2. Drop columns with more than 95% missing values
+3. Convert date columns to datetime format
+4. Create target variable (Resolution_Time)
+5. Perform feature engineering
+6. Handle missing values
+7. Remove identifier and leakage-prone columns
+8. Perform Exploratory Data Analysis (EDA)
+9. Split dataset into training and testing sets
+10. Train baseline regression models
+11. Evaluate model performance
+12. Perform feature selection and hyperparameter tuning
+13. Train ensemble models and compare results
+14. Finalize model and analyze feature importance
+```
+---
 
-Key steps:
+## 🔧 Feature Engineering
 
-* Removed columns with >95% missing values
-* Parsed and validated datetime fields
-* Computed resolution time in hours
-* Removed invalid / negative durations
-* Merged multiple comment fields into a single text feature
-* Engineered temporal features:
+The following feature groups were engineered to capture operational, temporal, and behavioral patterns that influence issue resolution time.
 
-  * Creation hour
-  * Day of week
-  * Weekend indicator
+### Time-Based Features
+- Created day of week
+- Created hour
+- Weekend indicator for issue creation
 
-### Feature representation
+### Priority and Issue Attributes
+- Encoded issue priority
+- Encoded issue type
+- Encoded project type
+- Encoded severity (where available)
 
-* **Text:** TF-IDF (summary, description, comments)
-* **Categorical:** One-hot encoded metadata
-* **Numeric:** Time-based features
+### Activity-Based Features
+- Total number of comments on the issue
+- Engagement duration between issue creation and last update
+
+### Text-Based Features
+- Length of issue summary
+- Length of issue description
+
+### Workload-Based Features
+- Reporter issue count
+
+These features convert raw Jira metadata into meaningful numerical signals suitable for machine learning models.
 
 ---
 
-## 🔀 Train–Test Split
+## 🤖 Models Implemented
 
-A **time-based split** was used instead of random sampling:
+The following regression models were trained and evaluated:
 
-* **Training set:** older issues
-* **Test set:** newer issues
-
-This simulates real-world deployment and avoids **data leakage**.
-
----
-
-## 🧪 Models Evaluated
-
-### 1️⃣ Ridge Regression (Linear Baseline)
-
-* Used as a baseline
-* Performed poorly due to:
-
-  * Non-linear relationships
-  * Heavy target skew
-* Established problem difficulty
-
----
-
-### 2️⃣ LightGBM Regressor (Raw Target)
-
-* First tree-based model tested
-* Large improvement over linear baseline
-* Still affected by extreme skew and variance
-
----
-
-### 3️⃣ LightGBM Regressor (Log-Transformed Target) — **Final Model**
-
-* Trained on `log(resolution_time_hours)`
-* Best overall performance
-* Reduced impact of extreme long-running issues
-* Stable and reliable predictions
-
----
-
-### 4️⃣ Random Forest Regressor (Log-Transformed Target)
-
-* Used as a comparative tree-based model
-* Performed better than linear baseline
-* Inferior to LightGBM due to lack of boosting
+- Linear Regression (baseline)
+- Ridge Regression (with hyperparameter tuning)
+- Lasso Regression (with hyperparameter tuning)
+- Gradient Boosting Regressor
+- Random Forest Regressor
+- XGBoost Regressor
 
 ---
 
 ## 📈 Evaluation Metrics
 
-Since this is a regression problem, **accuracy is not applicable**.
+Model performance was evaluated using standard regression metrics:
 
-Metrics used:
+- Mean Absolute Error (MAE)
+- Mean Squared Error (MSE)
+- Root Mean Squared Error (RMSE)
+- R-squared score
 
-* **MAE (Mean Absolute Error)**
-* **RMSE (Root Mean Squared Error)**
-
----
-
-## 📊 Model Performance Comparison
-
-| Model            | Target  | MAE (hours) | RMSE (hours) |
-| ---------------- | ------- | ----------- | ------------ |
-| Ridge Regression | Raw     | ~10,723     | ~12,367      |
-| LightGBM         | Raw     | ~4,251      | ~4,742       |
-| **LightGBM**     | **Log** | **~3,534**  | **~3,970**   |
-| Random Forest    | Log     | ~4,817      | ~5,365       |
-
-### Key observation
-
-Tree-based models dramatically outperform linear regression, and **applying a log transformation further stabilizes variance**, allowing LightGBM to achieve the lowest error.
+All error metrics are reported in days.
 
 ---
 
-## 🧠 Model Selection Rationale
+## 🏆 Results Summary
 
-LightGBM with a log-transformed target was selected because:
+| Model | MAE (Days) | RMSE (Days) | R² |
+|------|------------|-------------|----|
+| Linear / Ridge / Lasso | ~45 | ~64 | ~0.56 |
+| Gradient Boosting | ~24 | ~38 | ~0.84 |
+| Random Forest | Near 0 | Near 0 | ~1.00 |
+| XGBoost | ~1 | ~1 | ~1.00 |
 
-* Linear models violated core assumptions
-* Resolution time exhibited extreme skew
-* Tree-based models captured non-linear feature interactions
-* Gradient boosting outperformed bagging (Random Forest)
-* Empirical evaluation showed the lowest MAE and RMSE
-
-Model choice was **data-driven and evidence-based**, not heuristic.
-
----
-
-## 🔍 Model Interpretability
-
-Interpretability was addressed using **LightGBM feature importance**.
-
-### Key insights
-
-* Textual complexity (summary, description, comments) is the strongest driver
-* Project-specific context significantly influences resolution time
-* Temporal features provide secondary signals
-
-SHAP was explored but intentionally excluded from the final version due to:
-
-* Extremely high-dimensional sparse feature space
-* Limited interpretability for TF-IDF feature indices
-
-This reflects **pragmatic, real-world ML decision-making**.
+The near-perfect scores achieved by Random Forest and XGBoost models were caused by data leakage from strongly correlated temporal features. After identifying and mitigating leakage-prone features, Gradient Boosting emerged as the most reliable and generalizable model.
 
 ---
 
-## ✅ Final Conclusion
+## ⚠️ Data Leakage Consideration
 
-Predicting Jira issue resolution time is a challenging non-linear regression problem.
-Linear models fail to capture the complexity of the data, while tree-based models perform significantly better.
+This project explicitly addresses data leakage, a common issue in time-dependent datasets such as Jira.
 
-By applying a log transformation and using LightGBM, the final model achieves the **lowest error with stable behavior**, making it the most suitable choice for this task.
+- Post-resolution and strongly correlated temporal features can unintentionally expose the target variable
+- Tree-based models are especially sensitive to such leakage
+- Leakage-prone features were identified and removed before final model selection
 
----
-
-## 🛠️ Tech Stack
-
-* Python
-* Pandas, NumPy
-* Scikit-learn
-* LightGBM
-* Matplotlib
+This ensures realistic model evaluation and trustworthy results.
 
 ---
 
-## 📂 Repository Structure
+## ✅ Final Model Selection
 
+The Gradient Boosting Regressor was selected as the final model due to:
+
+- Strong predictive performance
+- Stability across training and testing datasets
+- Better generalization under leakage-safe conditions
+
+---
+
+## 📌 Key Learnings
+
+- Feature engineering has a greater impact than model selection
+- High accuracy does not always indicate a correct or deployable model
+- Preventing data leakage is critical in real-world machine learning projects
+- Temporal datasets require careful validation strategies
+
+---
+
+## 🚀 Future Improvements
+
+- Time-aware cross-validation strategies
+- NLP-based embeddings for issue summary and description
+- Assignee workload and queue modeling
+- Real-time resolution time prediction pipeline
+- SLA breach risk classification
+
+---
+
+## 🧰 Tech Stack
+
+- Python
+- Pandas
+- NumPy
+- Scikit-learn
+- XGBoost
+- Matplotlib
+- Seaborn
+
+---
+
+## 📂 Project Structure
+
+```text
+├── jira_dataset.csv
+├── Jira_Resolution_Time_Prediction.ipynb
+└── README.md
 ```
-├── GFG_FINAL.csv
-├── Resolution_time_pred_model.ipynb
-├── README.md
-```
 
 ---
 
-## 🚀 Future Improvements (Optional)
+👤 Author
 
-* SLA-based evaluation metrics
-* Grouped text feature interpretation
-* Integration with Jira APIs for real-time inference
-
----
-
-## 📌 Project Status
-
-✅ **Completed**
-This repository represents a **finished, portfolio-ready applied machine learning project**.
-
+Ashok T
+Domain: Data Science and Machine Learning
 
 ---
+
+⭐ Final Note
+
+This project emphasizes correct machine learning practices, leakage prevention, and realistic model evaluation over inflated performance metrics, making it suitable for real-world applications and professional review.
+
+
+
