@@ -184,6 +184,7 @@ The Gradient Boosting Regressor was selected as the final model due to:
 👤 Author
 
 Ashok T
+
 Domain: Data Science and Machine Learning
 
 ---
@@ -191,6 +192,7 @@ Domain: Data Science and Machine Learning
 ⭐ Final Note
 
 This project emphasizes correct machine learning practices, leakage prevention, and realistic model evaluation over inflated performance metrics, making it suitable for real-world applications and professional review.
+
 
 
 
